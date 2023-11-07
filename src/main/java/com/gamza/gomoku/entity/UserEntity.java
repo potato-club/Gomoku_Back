@@ -24,6 +24,8 @@ public class UserEntity extends BaseTimeEntity{
     private String userName;
     @Column(nullable = false)
     private String password;
+    @Column
+    private String phoneNumber;
     @Column(nullable = false)
     private UserRole userRole;
     @Column(nullable = false)
@@ -36,4 +38,10 @@ public class UserEntity extends BaseTimeEntity{
     private long totalPlay;
     @Column
     private long totalWin;
+    @Column
+    private float winRate;
+
+    public void setRefreshToken(String RT) {
+        this.refreshToken = RT;
+    }
 }

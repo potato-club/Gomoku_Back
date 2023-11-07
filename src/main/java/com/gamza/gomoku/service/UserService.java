@@ -1,15 +1,14 @@
 package com.gamza.gomoku.service;
 
-import com.gamza.gomoku.dto.user.LoginRequestDto;
-import com.gamza.gomoku.dto.user.SignupRequestDto;
-import com.gamza.gomoku.dto.user.SimpleUserInfoResponseDto;
-import com.gamza.gomoku.dto.user.UserInfoResponseDto;
+import com.gamza.gomoku.dto.user.*;
 import com.gamza.gomoku.entity.UserEntity;
 import com.gamza.gomoku.enumcustom.Tier;
 import com.gamza.gomoku.enumcustom.UserRole;
 import com.gamza.gomoku.error.ErrorCode;
 import com.gamza.gomoku.error.execption.DuplicateException;
+import com.gamza.gomoku.error.execption.NotFoundException;
 import com.gamza.gomoku.error.execption.UnAuthorizedException;
+import com.gamza.gomoku.jwt.JwtProvider;
 import com.gamza.gomoku.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +25,7 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtTokenProvider;
 
     public ResponseEntity<String> login(LoginRequestDto loginRequestDto, HttpServletResponse response){
         UserEntity userEntity = userRepository.findByUserEmail(loginRequestDto.getUserEmail()).orElseThrow(()->{
@@ -35,11 +35,12 @@ public class UserService {
             throw new UnAuthorizedException(ErrorCode.INVALID_ACCESS.getMessage(),ErrorCode.INVALID_ACCESS);
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(basicLoginRequestDto.getUserEmail());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(basicLoginRequestDto.getUserEmail());
-        userEntity.setRefreshToken(refreshToken);
-        response.setHeader("Authorization","Bearer " + accessToken);
-        response.setHeader("RefreshToken","Bearer "+ refreshToken);
+        String AT = jwtTokenProvider.createAT(userEntity);
+        String RT = jwtTokenProvider.createRT(userEntity);
+        userEntity.setRefreshToken(RT);
+        response.setHeader("Authorization","Bearer " + AT);
+        response.setHeader("RefreshToken","Bearer "+ RT);
+
         return ResponseEntity.ok("로그인 성공");
     }
     @Transactional
@@ -53,25 +54,60 @@ public class UserService {
                 .userName(signupRequestDto.getUserName())
                 .userEmail(signupRequestDto.getUserEmail())
                 .password(passwordEncoder.encode(signupRequestDto.getPassword()))
+                .phoneNumber(signupRequestDto.getPhoneNumber())
                 .userRole(UserRole.USER)
-                .refreshToken()
+                .refreshToken("dummy")
                 .tier(Tier.UNRANKED)
                 .score(0)
                 .totalPlay(0)
                 .totalWin(0)
                 .build();
 
+        String AT = jwtTokenProvider.createAT(userEntity);
+        String RT = jwtTokenProvider.createRT(userEntity);
+
+        userEntity.setRefreshToken(RT);
+
         userRepository.save(userEntity);
+
+        response.setHeader("Authorization","Bearer " + AT);
+        response.setHeader("RefreshToken","Bearer "+ RT);
 
         return ResponseEntity.ok("회원가입 성공");
     }
-    //===========UserInfo 관련=======================
-    public SimpleUserInfoResponseDto getSimpleUserInfo(HttpServletRequest request) {
+    public ResponseEntity<String> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
+        String RT = jwtTokenProvider.resolveRT(request);
 
+        if ( !jwtTokenProvider.validateToken(RT) ) {
+            throw new UnAuthorizedException(ErrorCode.INVALID_TOKEN.getMessage(), ErrorCode.INVALID_TOKEN);
+        }
+
+        UserEntity userEntity = userRepository
+                .findByUserEmail(jwtTokenProvider.getUserEmail(RT))
+                .orElseThrow(()->{throw new NotFoundException(ErrorCode.NOT_FOUND_EXCEPTION.getMessage(), ErrorCode.NOT_FOUND_EXCEPTION);});
+
+        if ( !(RT.equals(userEntity.getRefreshToken())) ) {
+            throw new UnAuthorizedException("저장된 RT와 다릅니다.",ErrorCode.INVALID_TOKEN);
+        }
+
+        response.setHeader("Authorization","Bearer " + jwtTokenProvider.createAT(userEntity));
+        return ResponseEntity.ok("good,check header");
+    }
+
+
+    //===========UserInfo 관련=======================
+
+    public SimpleUserInfoResponseDto getSimpleUserInfo(HttpServletRequest request) {
+        TokenParsingUserInfo userInfo =  jwtTokenProvider.getUserInfoOfAccessTokenByHttpRequest(request);
+        return new SimpleUserInfoResponseDto(userInfo);
     }
 
     public UserInfoResponseDto getUserInfo(HttpServletRequest request) {
+        UserEntity userEntity = userRepository
+                .findByUserEmail(jwtTokenProvider.getUserEmailOfAccessTokenByHttpRequest(request))
+                .orElseThrow(()->{throw new NotFoundException(ErrorCode.NOT_FOUND_EXCEPTION.getMessage(), ErrorCode.NOT_FOUND_EXCEPTION);});
 
+        return new UserInfoResponseDto(userEntity);
     }
 
 }

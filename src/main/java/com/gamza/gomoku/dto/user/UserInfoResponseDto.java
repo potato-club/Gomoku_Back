@@ -21,7 +21,7 @@ public class UserInfoResponseDto {
         this.userEmail = userEntity.getUserEmail();
         this.tier = userEntity.getTier();
         this.score = userEntity.getScore();
-        this.winRate = calWinRate();
+        this.winRate = userEntity.getWinRate();
         this.totalPlay = userEntity.getTotalPlay();
         this.totalWin = userEntity.getTotalWin();
     }

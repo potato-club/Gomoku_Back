@@ -24,6 +24,10 @@ public class UserController {
     public ResponseEntity<String> login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
         return userService.login(loginRequestDto, response);
     }
+    @GetMapping("/auth/refresh")
+    public ResponseEntity<String> refreshAT(HttpServletRequest request, HttpServletResponse response) {
+        return userService.refreshAccessToken(request,response);
+    }
     @GetMapping("/user/info/simple")
     public SimpleUserInfoResponseDto simpleUserInfo(HttpServletRequest request) {
         return userService.getSimpleUserInfo(request);

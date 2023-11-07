@@ -1,7 +1,9 @@
 package com.gamza.gomoku.enumcustom;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+@Getter
 @RequiredArgsConstructor
 public enum Tier {
     UNRANKED("언랭크",0,99),
