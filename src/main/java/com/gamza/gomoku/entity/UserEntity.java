@@ -1,6 +1,7 @@
 package com.gamza.gomoku.entity;
 
 import com.gamza.gomoku.enumcustom.Tier;
+import com.gamza.gomoku.enumcustom.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,8 @@ public class UserEntity extends BaseTimeEntity{
     private String userName;
     @Column(nullable = false)
     private String password;
+    @Column(nullable = false)
+    private UserRole userRole;
     @Column(nullable = false)
     private String refreshToken;
     @Column(nullable = false)
