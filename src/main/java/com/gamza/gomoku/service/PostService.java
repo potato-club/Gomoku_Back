@@ -4,12 +4,14 @@ import com.gamza.gomoku.dto.post.PostListResponseDto;
 import com.gamza.gomoku.dto.post.PostRequestDto;
 import com.gamza.gomoku.dto.post.PostResponseDto;
 import com.gamza.gomoku.entity.PostEntity;
+import com.gamza.gomoku.entity.QPostEntity;
 import com.gamza.gomoku.entity.UserEntity;
 import com.gamza.gomoku.error.ErrorCode;
 import com.gamza.gomoku.error.execption.NotFoundException;
 import com.gamza.gomoku.jwt.JwtProvider;
 import com.gamza.gomoku.repository.PostRepository;
 import com.gamza.gomoku.repository.UserRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +30,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final JwtProvider jwtTokenProvider;
+    private final JPAQueryFactory jpaQueryFactory;
 
     public ResponseEntity<String> createPost(PostRequestDto postRequestDto, HttpServletRequest request) {
         UserEntity userEntity = userRepository
@@ -50,7 +54,24 @@ public class PostService {
     }
     public Page<PostListResponseDto> getPostList(int page) {
         PageRequest pageRequest = PageRequest.of(page-1,20);
-        Page<PostEntity> postEntityPage = postRepository.findByAllOrderByIdDesc(pageRequest);
-        return new PageImpl<>(postEntityPage.getContent().stream().map(PostListResponseDto::new).collect(Collectors.toList()), pageRequest, postEntityPage.getTotalElements());
+
+        QPostEntity qPostEntity = QPostEntity.postEntity;
+        List<PostEntity> queryResult = jpaQueryFactory
+                .selectFrom(qPostEntity)
+                .orderBy(qPostEntity.id.desc())
+                .offset(pageRequest.getOffset())
+                .limit(pageRequest.getPageSize())
+                .fetch();
+
+        long total = jpaQueryFactory
+                .select(qPostEntity.count())
+                .from(qPostEntity)
+                .fetchOne();
+
+        List<PostListResponseDto> result = queryResult.stream()
+                .map(postEntity -> new PostListResponseDto(postEntity))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(result, pageRequest,total);
     }
 }

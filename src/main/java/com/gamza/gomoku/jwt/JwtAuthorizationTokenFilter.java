@@ -29,7 +29,7 @@ public class JwtAuthorizationTokenFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        if (path.startsWith("/auth")) {
+        if (path.startsWith("/auth") || path.startsWith("/ranking")) {
             filterChain.doFilter(request, response);
             return;
         }

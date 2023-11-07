@@ -20,7 +20,7 @@ public class UserEntity extends BaseTimeEntity{
     private UUID uid;
     @Column(nullable = false,unique = true)
     private String userEmail;
-    @Column(nullable = false)
+    @Column(nullable = false,unique = true)
     private String userName;
     @Column(nullable = false)
     private String password;
