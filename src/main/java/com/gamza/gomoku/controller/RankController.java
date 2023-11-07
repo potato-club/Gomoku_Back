@@ -2,6 +2,7 @@ package com.gamza.gomoku.controller;
 
 import com.gamza.gomoku.dto.rank.RankingResponseDto;
 import com.gamza.gomoku.service.RankService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "랭킹 API")
 public class RankController {
     private final RankService rankService;
     //스코어 순으로 정렬하고, winRate로 다시 정렬해요.

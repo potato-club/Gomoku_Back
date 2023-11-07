@@ -29,7 +29,8 @@ public class JwtAuthorizationTokenFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        if (path.startsWith("/auth") || path.startsWith("/ranking")) {
+        if (path.startsWith("/auth") || path.startsWith("/ranking")
+            || path.contains("/swagger") || path.contains("/v3/api-docs")) {
             filterChain.doFilter(request, response);
             return;
         }

@@ -74,4 +74,34 @@ public class PostService {
 
         return new PageImpl<>(result, pageRequest,total);
     }
+
+    //이 API 대충 짰음!! 데이터 쌓일 시 O(n^2) 시간복잡도로 느려짐 리펙토링 요망
+    public Page<PostListResponseDto> searchOfPostInTitleAndText(String key, int page) {
+        PageRequest pageRequest = PageRequest.of(page-1,20);
+        QPostEntity qPostEntity = QPostEntity.postEntity;
+
+
+        List<PostEntity> queryResult = jpaQueryFactory
+                .selectFrom(qPostEntity)
+                .where(qPostEntity.title.like("%"+key+"%")
+                        .or(qPostEntity.text.like("%"+key+"%")))
+                .orderBy(qPostEntity.id.desc())
+                .offset(pageRequest.getOffset())
+                .limit(pageRequest.getPageSize())
+                .fetch();
+
+        long total = jpaQueryFactory
+                .selectFrom(qPostEntity)
+                .where(qPostEntity.title.like("%"+key+"%")
+                        .or(qPostEntity.text.like("%"+key+"%")))
+                .fetchCount();
+
+        List<PostListResponseDto> result = queryResult.stream()
+                .map(postEntity -> new PostListResponseDto(postEntity))
+                .collect(Collectors.toList());
+
+        // PageImpl 객체 생성 및 반환
+        return new PageImpl<>(result, pageRequest, total);
+
+    }
 }
